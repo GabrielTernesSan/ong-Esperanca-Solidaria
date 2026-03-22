@@ -1,8 +1,26 @@
+using MassTransit;
+using MediatR;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Ong.Application.Requests;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddMassTransit(x =>
+{
+    x.UsingRabbitMq((context, cfg) =>
+    {
+        cfg.Host("rabbitmq://localhost", h =>
+        {
+            h.Username("guest");
+            h.Password("guest");
+        });
+
+        cfg.ConfigureEndpoints(context);
+    });
+});
 
 #region Swagger Configuration
 builder.Services.AddSwaggerGen(c =>
@@ -57,6 +75,15 @@ builder.Services.AddAuthorizationBuilder()
 
 var app = builder.Build();
 
+app.MapPost("/donations", async ([FromBody] DonationRequest request, IMediator mediator) =>
+{
+    var result = await mediator.Send(request);
+
+    return result.HasErrors
+        ? Results.BadRequest(result)
+        : Results.Ok(result);
+});
+
 #region Middleware Pipeline
 app.UseSwagger();
 app.UseSwaggerUI();
@@ -67,6 +94,6 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+#endregion
 
 app.Run();
-#endregion

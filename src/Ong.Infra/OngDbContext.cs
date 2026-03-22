@@ -9,5 +9,7 @@ namespace Ong.Infra
 
         public virtual DbSet<User> Users { get; set; }
         public virtual DbSet<Campaign> Campaigns { get; set; }
+        public virtual DbSet<Donation> Donations { get; set; }
+        public virtual DbSet<OutboxMessage> OutboxMessages{ get; set; }
     }
 }

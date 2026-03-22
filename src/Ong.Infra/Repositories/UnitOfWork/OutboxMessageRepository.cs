@@ -1,0 +1,30 @@
+using Ong.Domain;
+using Ong.Domain.Repositories.UnitOfWork;
+
+namespace Ong.Infra.Repositories.UnitOfWork
+{
+    public class OutboxMessageRepository : IOutboxRepository
+    {
+        private readonly OngDbContext _context;
+
+        public OutboxMessageRepository(OngDbContext context)
+        {
+            _context = context;
+        }
+
+        public async Task CreateAsync(OutboxMessage message)
+        {
+            var entity = new Tables.OutboxMessage
+            {
+                Id = message.Id,
+                Type = message.Type,
+                Payload = message.Payload,
+                OccurredOn = message.OccurredOn,
+                ProcessedOn = message.ProcessedOn,
+                Error = message.Error
+            };
+
+            await _context.OutboxMessages.AddAsync(entity);
+        }
+    }
+}
