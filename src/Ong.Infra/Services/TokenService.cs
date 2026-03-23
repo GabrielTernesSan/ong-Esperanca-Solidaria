@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using Ong.Domain;
 using Ong.Domain.Services;
@@ -5,7 +6,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 
-namespace Ong.Web.Services
+namespace Ong.Infra.Services
 {
     public class TokenService : ITokenService
     {
