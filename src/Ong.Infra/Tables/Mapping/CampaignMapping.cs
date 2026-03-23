@@ -13,12 +13,20 @@ namespace Ong.Infra.Tables.Mapping
             builder.Property(x => x.Id).IsRequired().ValueGeneratedNever();
 
             builder.Property(u => u.Title)
-                   .IsRequired();
+                .HasMaxLength(Domain.Campaign.MaxTitleLength)
+                .IsRequired();
+
+            builder.Property(u => u.Description)
+                .HasMaxLength(Domain.Campaign.MaxDescriptionLength)
+                .IsRequired();
 
             builder.Property(u => u.StartDate)
                    .IsRequired();
 
             builder.Property(u => u.EndDate)
+                   .IsRequired();
+
+            builder.Property(u => u.CurrentAmount)
                    .IsRequired();
 
             builder.Property(u => u.FinancialGoal)

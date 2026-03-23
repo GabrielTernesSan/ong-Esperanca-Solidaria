@@ -3,7 +3,7 @@ using Ong.Domain.Repositories.UnitOfWork;
 
 namespace Ong.Infra.Repositories.UnitOfWork
 {
-    public class OutboxMessageRepository : IOutboxRepository
+    public class OutboxMessageRepository : IOutboxMessageRepository
     {
         private readonly OngDbContext _context;
 

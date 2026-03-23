@@ -9,6 +9,7 @@ namespace Ong.Infra.Tables
         public string Description { get; set; } = null!;
         public DateTimeOffset StartDate { get; set; }
         public DateTimeOffset EndDate { get; set; }
+        public decimal CurrentAmount { get; set; }
         public decimal FinancialGoal { get; set; }
         public EStatusCampanha Status { get; set; }
     }

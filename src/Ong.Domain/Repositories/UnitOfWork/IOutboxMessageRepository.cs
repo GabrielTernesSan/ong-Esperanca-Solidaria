@@ -1,6 +1,6 @@
 namespace Ong.Domain.Repositories.UnitOfWork
 {
-    public interface IOutboxRepository
+    public interface IOutboxMessageRepository
     {
         Task CreateAsync(OutboxMessage message);
     }

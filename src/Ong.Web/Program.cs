@@ -1,10 +1,10 @@
 using MassTransit;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Ong.Application;
 using Ong.Application.Requests;
-using System.Text;
+using Ong.Infra;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,6 +21,14 @@ builder.Services.AddMassTransit(x =>
         cfg.ConfigureEndpoints(context);
     });
 });
+
+builder.Services.AddInfraLayer(builder.Configuration);
+builder.Services.AddApplicationLayer();
+
+builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer();
+
+builder.Services.AddHttpContextAccessor();
 
 #region Swagger Configuration
 builder.Services.AddSwaggerGen(c =>
@@ -53,36 +61,38 @@ builder.Services.AddSwaggerGen(c =>
 #endregion
 
 #region Authentication & Authorization
-builder.Services.AddAuthentication("Bearer")
-    .AddJwtBearer("Bearer", options =>
-    {
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
-            ValidIssuer = builder.Configuration["Jwt:Issuer"],
-            ValidAudience = builder.Configuration["Jwt:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
-        };
-    });
+//builder.Services.AddAuthentication("Bearer")
+//    .AddJwtBearer("Bearer", options =>
+//    {
+//        options.TokenValidationParameters = new TokenValidationParameters
+//        {
+//            ValidateIssuer = true,
+//            ValidateAudience = true,
+//            ValidateLifetime = true,
+//            ValidateIssuerSigningKey = true,
+//            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+//            ValidAudience = builder.Configuration["Jwt:Audience"],
+//            IssuerSigningKey = new SymmetricSecurityKey(
+//                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
+//        };
+//    });
 
-builder.Services.AddAuthorizationBuilder()
-    .AddPolicy("AdminPolicy", policy => policy.RequireRole("Admin"));
+//builder.Services.AddAuthorizationBuilder()
+//    .AddPolicy("AdminPolicy", policy => policy.RequireRole("Admin"));
 #endregion
 
 var app = builder.Build();
 
-app.MapPost("/donations", async ([FromBody] DonationRequest request, IMediator mediator) =>
+app.MapPost("/donations/{campaingId}", async (Guid campaingId, [FromBody] DonationRequest request, IMediator mediator) =>
 {
+    request.CampaignId = campaingId;
+
     var result = await mediator.Send(request);
 
     return result.HasErrors
         ? Results.BadRequest(result)
         : Results.Ok(result);
-});
+}).AllowAnonymous();
 
 #region Middleware Pipeline
 app.UseSwagger();

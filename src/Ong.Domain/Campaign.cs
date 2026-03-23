@@ -4,8 +4,8 @@ namespace Ong.Domain
 {
     public class Campaign
     {
-        const int MaxTitleLength = 100;
-        const int MaxDescriptionLength = 300;
+        public const int MaxTitleLength = 100;
+        public const int MaxDescriptionLength = 300;
 
         public Guid Id { get; }
         public string Title { get; private set; }
@@ -13,6 +13,7 @@ namespace Ong.Domain
         public DateTimeOffset StartDate { get; private set; }
         public DateTimeOffset EndDate { get; private set; }
         public decimal FinancialGoal { get; private set; }
+        public decimal CurrentAmount { get; private set; }
         public EStatusCampanha Status { get; private set; }
 
         public Campaign(string title, string description, DateTimeOffset startDate, DateTimeOffset endDate, decimal financialGoal, EStatusCampanha status)
@@ -28,17 +29,22 @@ namespace Ong.Domain
             EndDate = endDate;
             FinancialGoal = financialGoal;
             Status = status;
+            CurrentAmount = 0m;
         }
 
-        public Campaign(Guid id, string title, string description, DateTimeOffset startDate, DateTimeOffset endDate, decimal financialGoal, EStatusCampanha status)
-            : this(title, description, startDate, endDate, financialGoal, status)
+        public Campaign(Guid id, string title, string description, DateTimeOffset startDate, DateTimeOffset endDate, decimal financialGoal, EStatusCampanha status, decimal currentAmount)
         {
             Id = id;
+            Title = title;
+            Description = description;
+            StartDate = startDate;
+            EndDate = endDate;
+            FinancialGoal = financialGoal;
+            Status = status;
+            CurrentAmount = currentAmount;
         }
 
         public void UpdateStatus(EStatusCampanha newStatus) => Status = newStatus;
-
-        public void UpdateFinancialGoal(decimal newGoal) => FinancialGoal += newGoal;
 
         public void UpdateDescription(string newDescription)
         {
@@ -60,6 +66,17 @@ namespace Ong.Domain
         {
             StartDate = newStartDate;
             EndDate = newEndDate;
+        }
+
+        public void AddDonation(decimal amount)
+        {
+            if (amount <= 0)
+                throw new ArgumentException("Valor da doação deve ser maior que zero.");
+
+            CurrentAmount += amount;
+
+            if (CurrentAmount >= FinancialGoal)
+                MarkAsCompleted();
         }
 
         public bool IsActive() => Status == EStatusCampanha.InProgress && DateTimeOffset.UtcNow >= StartDate && DateTimeOffset.UtcNow <= EndDate;

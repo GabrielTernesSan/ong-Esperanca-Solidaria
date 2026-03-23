@@ -10,10 +10,10 @@ namespace Ong.Application.Handlers
     public class DonationHandler : IRequestHandler<DonationRequest, Response>
     {
         private readonly IDonationRepository _donationRepository;
-        private readonly IOutboxRepository _outboxRepository;
+        private readonly IOutboxMessageRepository _outboxRepository;
         private readonly IUnitOfWork _unitOfWork;
 
-        public DonationHandler(IDonationRepository donationRepository, IOutboxRepository outboxRepository, IUnitOfWork unitOfWork)
+        public DonationHandler(IDonationRepository donationRepository, IOutboxMessageRepository outboxRepository, IUnitOfWork unitOfWork)
         {
             _donationRepository = donationRepository;
             _outboxRepository = outboxRepository;
