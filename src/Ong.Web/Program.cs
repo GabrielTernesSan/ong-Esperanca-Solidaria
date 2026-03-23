@@ -1,10 +1,13 @@
 using MassTransit;
 using MediatR;
+using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Ong.Application;
 using Ong.Application.Requests;
 using Ong.Infra;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -61,27 +64,45 @@ builder.Services.AddSwaggerGen(c =>
 #endregion
 
 #region Authentication & Authorization
-//builder.Services.AddAuthentication("Bearer")
-//    .AddJwtBearer("Bearer", options =>
-//    {
-//        options.TokenValidationParameters = new TokenValidationParameters
-//        {
-//            ValidateIssuer = true,
-//            ValidateAudience = true,
-//            ValidateLifetime = true,
-//            ValidateIssuerSigningKey = true,
-//            ValidIssuer = builder.Configuration["Jwt:Issuer"],
-//            ValidAudience = builder.Configuration["Jwt:Audience"],
-//            IssuerSigningKey = new SymmetricSecurityKey(
-//                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
-//        };
-//    });
+builder.Services.AddAuthentication("Bearer")
+    .AddJwtBearer("Bearer", options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
+        };
+    });
 
-//builder.Services.AddAuthorizationBuilder()
-//    .AddPolicy("AdminPolicy", policy => policy.RequireRole("Admin"));
+builder.Services.AddAuthorizationBuilder()
+    .AddPolicy("GestorONGPolicy", policy => policy.RequireRole("GestorONG"));
 #endregion
 
 var app = builder.Build();
+
+app.MapPost("/auth/register", async ([FromBody] RegisterRequest request, IMediator mediator) =>
+{
+    var result = await mediator.Send(request);
+
+    return result.HasErrors
+        ? Results.BadRequest(result)
+        : Results.Ok(result);
+});
+
+app.MapPost("/auth/login", async ([FromBody] LoginRequest request, IMediator mediator) =>
+{
+    var result = await mediator.Send(request);
+
+    return result.HasErrors
+        ? Results.Unauthorized()
+        : Results.Ok(result);
+});
 
 app.MapPost("/donations/{campaingId}", async (Guid campaingId, [FromBody] DonationRequest request, IMediator mediator) =>
 {
@@ -98,7 +119,10 @@ app.MapPost("/donations/{campaingId}", async (Guid campaingId, [FromBody] Donati
 app.UseSwagger();
 app.UseSwaggerUI();
 
-app.UseHttpsRedirection();
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
 
 app.UseAuthentication();
 app.UseAuthorization();
