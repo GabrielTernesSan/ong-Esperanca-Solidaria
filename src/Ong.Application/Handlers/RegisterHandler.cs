@@ -20,12 +20,6 @@ namespace Ong.Application.Handlers
         {
             var response = new Response();
 
-            if (!Enum.TryParse<ERole>(request.Role, ignoreCase: true, out var role))
-            {
-                response.AddError("Role inválida. Valores aceitos: GestorONG, Doador.");
-                return response;
-            }
-
             var existingUser = await _userRepository.GetByEmailAsync(request.Email);
             if (existingUser is not null)
             {
@@ -35,7 +29,7 @@ namespace Ong.Application.Handlers
 
             var passwordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
 
-            var user = new User(Guid.NewGuid(), request.Name, request.Email, passwordHash, role.ToString());
+            var user = new User(Guid.NewGuid(), request.Name, request.Email, passwordHash, ERole.Doador.ToString());
 
             await _userRepository.CreateAsync(user);
 

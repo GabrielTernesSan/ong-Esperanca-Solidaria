@@ -1,11 +1,13 @@
 using MassTransit;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Ong.Application;
 using Ong.Application.Requests;
 using Ong.Infra;
+using System.Security.Claims;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -103,16 +105,25 @@ app.MapPost("/auth/login", async ([FromBody] LoginRequest request, IMediator med
         : Results.Ok(result);
 });
 
-app.MapPost("/donations/{campaingId}", async (Guid campaingId, [FromBody] DonationRequest request, IMediator mediator) =>
+app.MapPost("/donations/{campaingId}", async (Guid campaingId, [FromBody] DonationRequest request, IMediator mediator, HttpContext httpContext) =>
 {
     request.CampaignId = campaingId;
+
+    var userIdString =
+    httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+    ?? httpContext.User.FindFirst("sub")?.Value;
+
+    if (!Guid.TryParse(userIdString, out var userId))
+        return Results.Unauthorized();
+
+    request.UserId = userId;
 
     var result = await mediator.Send(request);
 
     return result.HasErrors
         ? Results.BadRequest(result)
         : Results.Ok(result);
-}).AllowAnonymous();
+}).RequireAuthorization();
 
 #region Middleware Pipeline
 app.UseSwagger();

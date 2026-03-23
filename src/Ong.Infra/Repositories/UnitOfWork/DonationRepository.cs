@@ -20,7 +20,7 @@ namespace Ong.Infra.Repositories.UnitOfWork
                 CampaignId = donation.CampaignId,
                 UserId = donation.UserId,
                 Amount = donation.Amount,
-                Date = donation.Date
+                Date = donation.Date.ToUniversalTime()
             };
 
             await _context.Donations.AddAsync(entity);

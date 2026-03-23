@@ -15,10 +15,13 @@ namespace Ong.Infra.Repositories
 
         public async Task<User?> GetByEmailAsync(string email)
         {
-            return await _context.Users
+            var entity = await _context.Users
                 .AsNoTracking()
-                .Select(u => new User(u.Id, u.Name, u.Email, u.PasswordHash, u.Role))
                 .FirstOrDefaultAsync(u => u.Email == email);
+
+            return entity == null
+                ? null
+                : new User(entity.Id, entity.Name, entity.Email, entity.PasswordHash, entity.Role);
         }
 
         public async Task CreateAsync(User user)

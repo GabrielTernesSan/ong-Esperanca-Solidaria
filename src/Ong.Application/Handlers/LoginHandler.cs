@@ -4,7 +4,7 @@ using Ong.Commom;
 using Ong.Domain.Repositories;
 using Ong.Domain.Services;
 
-namespace Ong.Application
+namespace Ong.Application.Handlers
 {
     public class LoginHandler : IRequestHandler<LoginRequest, Response>
     {
