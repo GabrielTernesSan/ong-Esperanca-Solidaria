@@ -1,3 +1,4 @@
+using System.Reflection;
 using Microsoft.EntityFrameworkCore;
 using Ong.Infra.Tables;
 
@@ -11,5 +12,10 @@ namespace Ong.Infra
         public virtual DbSet<Campaign> Campaigns { get; set; }
         public virtual DbSet<Donation> Donations { get; set; }
         public virtual DbSet<OutboxMessage> OutboxMessages{ get; set; }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
+        }
     }
 }
