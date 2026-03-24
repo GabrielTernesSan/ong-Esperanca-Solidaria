@@ -44,7 +44,7 @@ namespace Ong.Application.Handlers
 
             var outboxMessage = new OutboxMessage(
                 Guid.NewGuid(),
-                typeof(DonationCreated).AssemblyQualifiedName!,
+                typeof(DonationCreated).Name!,
                 JsonSerializer.Serialize(donationEvent),
                 DateTime.UtcNow
             );
