@@ -1,143 +1,132 @@
 using MassTransit;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using Ong.Application;
-using Ong.Application.Requests;
-using Ong.Infra;
 using System.Security.Claims;
 using System.Text;
+using Ong.Application;
+using Ong.Infra;
+using Ong.Application.Requests;
+using Hangfire;
+using Ong.Application.Worker.Jobs;
+using Ong.Application.Worker;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddMassTransit(x =>
-{
-    x.UsingRabbitMq((context, cfg) =>
-    {
-        cfg.Host("rabbitmq://localhost", h =>
-        {
-            h.Username("guest");
-            h.Password("guest");
-        });
-
-        cfg.ConfigureEndpoints(context);
-    });
-});
-
 builder.Services.AddInfraLayer(builder.Configuration);
 builder.Services.AddApplicationLayer();
-
-builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
-
 builder.Services.AddHttpContextAccessor();
 
-#region Swagger Configuration
-builder.Services.AddSwaggerGen(c =>
+bool isWorker = builder.Configuration.GetValue<bool>("HangfireConfiguration:Worker");
+
+if (isWorker)
 {
-    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-    {
-        Name = "Authorization",
-        Type = SecuritySchemeType.Http,
-        Scheme = "bearer",
-        BearerFormat = "JWT",
-        In = ParameterLocation.Header,
-        Description = "Insira o token JWT com prefixo 'Bearer '"
-    });
+    builder.Services.AddApplicationWorkerLayer(builder.Configuration);
 
-    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    builder.Services.AddHangfireServer();
+}
+else
+{
+    builder.Services.AddMassTransit(x =>
     {
+        x.UsingRabbitMq((context, cfg) =>
         {
-            new OpenApiSecurityScheme
+            cfg.Host(builder.Configuration["RabbitMq:Host"], "/", h =>
             {
-                Reference = new OpenApiReference
-                {
-                    Type = ReferenceType.SecurityScheme,
-                    Id = "Bearer"
-                }
-            },
-            Array.Empty<string>()
-        }
+                h.Username(builder.Configuration["RabbitMq:Username"]);
+                h.Password(builder.Configuration["RabbitMq:Password"]);
+            });
+        });
     });
-});
-#endregion
 
-#region Authentication & Authorization
-builder.Services.AddAuthentication("Bearer")
-    .AddJwtBearer("Bearer", options =>
+    builder.Services.AddControllers();
+
+    builder.Services.AddEndpointsApiExplorer();
+
+    builder.Services.AddSwaggerGen(c =>
     {
-        options.TokenValidationParameters = new TokenValidationParameters
+        c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
         {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
-            ValidIssuer = builder.Configuration["Jwt:Issuer"],
-            ValidAudience = builder.Configuration["Jwt:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
-        };
+            Name = "Authorization",
+            Type = SecuritySchemeType.Http,
+            Scheme = "bearer",
+            BearerFormat = "JWT",
+            In = ParameterLocation.Header,
+            Description = "Token JWT"
+        });
+
+        c.AddSecurityRequirement(new OpenApiSecurityRequirement {
+            { new OpenApiSecurityScheme { Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" } }, Array.Empty<string>() }
+        });
     });
 
-builder.Services.AddAuthorizationBuilder()
-    .AddPolicy("GestorONGPolicy", policy => policy.RequireRole("GestorONG"));
-#endregion
+    builder.Services.AddAuthentication("Bearer")
+        .AddJwtBearer("Bearer", options =>
+        {
+            options.TokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateIssuer = true,
+                ValidateAudience = true,
+                ValidateLifetime = true,
+                ValidateIssuerSigningKey = true,
+                ValidIssuer = builder.Configuration["Jwt:Issuer"],
+                ValidAudience = builder.Configuration["Jwt:Audience"],
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!))
+            };
+        });
+
+    builder.Services.AddAuthorizationBuilder()
+        .AddPolicy("GestorONGPolicy", policy => policy.RequireRole("GestorONG"));
+}
 
 var app = builder.Build();
 
-app.MapPost("/auth/register", async ([FromBody] RegisterRequest request, IMediator mediator) =>
+if (isWorker)
 {
-    var result = await mediator.Send(request);
-
-    return result.HasErrors
-        ? Results.BadRequest(result)
-        : Results.Ok(result);
-});
-
-app.MapPost("/auth/login", async ([FromBody] LoginRequest request, IMediator mediator) =>
-{
-    var result = await mediator.Send(request);
-
-    return result.HasErrors
-        ? Results.Unauthorized()
-        : Results.Ok(result);
-});
-
-app.MapPost("/donations/{campaingId}", async (Guid campaingId, [FromBody] DonationRequest request, IMediator mediator, HttpContext httpContext) =>
-{
-    request.CampaignId = campaingId;
-
-    var userIdString =
-    httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
-    ?? httpContext.User.FindFirst("sub")?.Value;
-
-    if (!Guid.TryParse(userIdString, out var userId))
-        return Results.Unauthorized();
-
-    request.UserId = userId;
-
-    var result = await mediator.Send(request);
-
-    return result.HasErrors
-        ? Results.BadRequest(result)
-        : Results.Ok(result);
-}).RequireAuthorization();
-
-#region Middleware Pipeline
-app.UseSwagger();
-app.UseSwaggerUI();
-
-if (!app.Environment.IsDevelopment())
-{
-    app.UseHttpsRedirection();
+    using (var scope = app.Services.CreateScope())
+    {
+        var recurringJob = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
+        recurringJob.AddOrUpdate<OutboxPublisherJob>(
+            "processar-mensagens-outbox",
+            job => job.ProcessAsync(),
+            Cron.Minutely()
+        );
+    }
 }
+else
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
 
-app.UseAuthentication();
-app.UseAuthorization();
+    if (!app.Environment.IsDevelopment()) app.UseHttpsRedirection();
 
-app.MapControllers();
-#endregion
+    app.UseAuthentication();
+    app.UseAuthorization();
+    app.MapControllers();
+
+    app.MapPost("/auth/register", async ([FromBody] RegisterRequest request, IMediator mediator) =>
+    {
+        var result = await mediator.Send(request);
+        return result.HasErrors ? Results.BadRequest(result) : Results.Ok(result);
+    });
+
+    app.MapPost("/auth/login", async ([FromBody] LoginRequest request, IMediator mediator) =>
+    {
+        var result = await mediator.Send(request);
+        return result.HasErrors ? Results.Unauthorized() : Results.Ok(result);
+    });
+
+    app.MapPost("/donations/{campaingId}", async (Guid campaingId, [FromBody] DonationRequest request, IMediator mediator, HttpContext httpContext) =>
+    {
+        request.CampaignId = campaingId;
+        var userIdString = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? httpContext.User.FindFirst("sub")?.Value;
+        if (!Guid.TryParse(userIdString, out var userId)) return Results.Unauthorized();
+        request.UserId = userId;
+
+        var result = await mediator.Send(request);
+        return result.HasErrors ? Results.BadRequest(result) : Results.Ok(result);
+    }).RequireAuthorization();
+}
 
 app.Run();

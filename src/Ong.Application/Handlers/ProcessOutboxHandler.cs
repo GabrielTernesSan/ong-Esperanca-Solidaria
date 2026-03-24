@@ -11,14 +11,14 @@ namespace Ong.Application.Handlers
         private readonly IUnitOfWork _unitRepository;
         private readonly IMediator _mediator;
 
-        public ProcessOutboxCommandHandler(IOutboxMessageRepository outboxRepository, IMediator mediator, IUnitOfWork unitRepository)
+        public ProcessOutboxHandler(IOutboxMessageRepository outboxRepository, IMediator mediator, IUnitOfWork unitRepository)
         {
-            _outboxRepository = repository;
+            _outboxRepository = outboxRepository;
             _mediator = mediator;
             _unitRepository = unitRepository;
         }
 
-        public async Task Handle(ProcessOutboxCommand request, CancellationToken cancellationToken)
+        public async Task Handle(ProcessOutboxRequest request, CancellationToken cancellationToken)
         {
             var messages = await _outboxRepository.GetUnprocessedAsync();
 
@@ -27,6 +27,7 @@ namespace Ong.Application.Handlers
                 try
                 {
                     var type = Type.GetType(message.Type);
+
                     var payload = JsonSerializer.Deserialize(message.Payload, type!);
 
                     await _mediator.Publish(payload!, cancellationToken);
