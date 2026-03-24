@@ -25,5 +25,21 @@ namespace Ong.Infra.Repositories.UnitOfWork
 
             await _context.Donations.AddAsync(entity);
         }
+
+        public async Task<Donation?> GetByIdAsync(Guid id)
+        {
+            var entity = await _context.Donations.FindAsync(id);
+
+            if (entity == null)
+                return null;
+
+            return new Donation(
+                entity.Id,
+                entity.CampaignId,
+                entity.UserId,
+                entity.Amount,
+                entity.Date
+            );
+        }
     }
 }

@@ -16,7 +16,8 @@ namespace Ong.Infra.Tables.Mapping
                    .IsRequired();
 
             builder.Property(u => u.Payload)
-                   .IsRequired();
+                .HasColumnType("jsonb")
+                .IsRequired();
 
             builder.Property(u => u.OccurredOn)
                    .IsRequired();
