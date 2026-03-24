@@ -21,8 +21,23 @@ namespace Ong.Infra
             services.AddScoped<IUnitOfWork, UnitOfWork>();
             services.AddScoped<IDonationRepository, DonationRepository>();
             services.AddScoped<IOutboxMessageRepository, OutboxMessageRepository>();
+            services.AddScoped<ICampaignRepository, CampaignRepository>();
 
             services.AddScoped<ITokenService, TokenService>();
+
+            return services;
+        }
+
+        public static IServiceCollection AddInfraLayerForWorker(this IServiceCollection services, IConfiguration configuration)
+        {
+            services.AddDbContext<OngDbContext>(options =>
+                options.UseNpgsql(configuration.GetConnectionString("DefaultConnection")));
+
+            services.AddScoped<IUserRepository, UserRepository>();
+            services.AddScoped<IUnitOfWork, UnitOfWork>();
+            services.AddScoped<IDonationRepository, DonationRepository>();
+            services.AddScoped<IOutboxMessageRepository, OutboxMessageRepository>();
+            services.AddScoped<ICampaignRepository, CampaignRepository>();
 
             return services;
         }

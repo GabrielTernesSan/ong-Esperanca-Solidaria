@@ -26,17 +26,19 @@ namespace Ong.Application.Handlers
             {
                 try
                 {
-                    var type = Type.GetType(message.Type);
+                    var type = AppDomain.CurrentDomain.GetAssemblies()
+                        .SelectMany(a => a.GetTypes())
+                        .FirstOrDefault(t => t.Name == message.Type);
 
                     var payload = JsonSerializer.Deserialize(message.Payload, type!);
 
                     await _mediator.Publish(payload!, cancellationToken);
 
-                    message.ProcessedOn = DateTime.UtcNow;
+                    await _outboxRepository.MarkAsProcessedAsync(message.Id, DateTime.UtcNow);
                 }
                 catch (Exception ex)
                 {
-                    message.Error = ex.Message;
+                    await _outboxRepository.MarkAsErrorAsync(message.Id, ex.Message);
                 }
             }
 

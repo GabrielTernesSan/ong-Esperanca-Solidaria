@@ -1,16 +1,18 @@
+using Hangfire;
+using Hangfire.PostgreSql;
 using MassTransit;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Ong.Application;
+using Ong.Application.Requests;
+using Ong.Application.Worker;
+using Ong.Application.Worker.Configurations;
+using Ong.Application.Worker.Jobs;
+using Ong.Infra;
 using System.Security.Claims;
 using System.Text;
-using Ong.Application;
-using Ong.Infra;
-using Ong.Application.Requests;
-using Hangfire;
-using Ong.Application.Worker.Jobs;
-using Ong.Application.Worker;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,13 +20,27 @@ builder.Services.AddInfraLayer(builder.Configuration);
 builder.Services.AddApplicationLayer();
 builder.Services.AddHttpContextAccessor();
 
-bool isWorker = builder.Configuration.GetValue<bool>("HangfireConfiguration:Worker");
+bool isWorker = builder.Configuration.GetValue<bool>("Worker");
 
 if (isWorker)
 {
+    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+
+    builder.Services.AddHangfire(config => config
+        .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+        .UseSimpleAssemblyNameTypeSerializer()
+        .UseRecommendedSerializerSettings()
+        .UsePostgreSqlStorage(options =>
+        {
+            options.UseNpgsqlConnection(connectionString);
+        }));
+
     builder.Services.AddApplicationWorkerLayer(builder.Configuration);
 
-    builder.Services.AddHangfireServer();
+    builder.Services.AddHangfireServer(options =>
+    {
+        options.Queues = new[] { Queues.OutboxPublisherJob, "default" };
+    });
 }
 else
 {
@@ -84,6 +100,8 @@ var app = builder.Build();
 
 if (isWorker)
 {
+    app.UseHangfireDashboard();
+
     using (var scope = app.Services.CreateScope())
     {
         var recurringJob = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
