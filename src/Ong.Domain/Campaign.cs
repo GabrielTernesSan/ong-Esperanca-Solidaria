@@ -7,32 +7,26 @@ namespace Ong.Domain
         public const int MaxTitleLength = 100;
         public const int MaxDescriptionLength = 300;
 
-        public Guid Id { get; }
-        public string Title { get; private set; }
-        public string Description { get; private set; }
+        public Guid Id { get; private set; }
+        public string Title { get; private set; } = null!;
+        public string Description { get; private set; } = null!;
         public DateTimeOffset StartDate { get; private set; }
         public DateTimeOffset EndDate { get; private set; }
         public decimal FinancialGoal { get; private set; }
         public decimal CurrentAmount { get; private set; }
-        public EStatusCampanha Status { get; private set; }
+        public CampaignStatus Status { get; private set; }
 
-        public Campaign(string title, string description, DateTimeOffset startDate, DateTimeOffset endDate, decimal financialGoal, EStatusCampanha status)
-        {
-            if (title.Length > MaxTitleLength)
-                throw new ArgumentException("Título não pode exceder 100 caracteres.", nameof(title));
-            if (description.Length > MaxDescriptionLength)
-                throw new ArgumentException("Descrição não pode exceder 300 caracteres.", nameof(description));
+        private Campaign() { }
 
-            Title = title;
-            Description = description;
-            StartDate = startDate;
-            EndDate = endDate;
-            FinancialGoal = financialGoal;
-            Status = status;
-            CurrentAmount = 0m;
-        }
-
-        public Campaign(Guid id, string title, string description, DateTimeOffset startDate, DateTimeOffset endDate, decimal financialGoal, EStatusCampanha status, decimal currentAmount)
+        private Campaign(
+            Guid id,
+            string title,
+            string description,
+            DateTimeOffset startDate,
+            DateTimeOffset endDate,
+            decimal financialGoal,
+            CampaignStatus status,
+            decimal currentAmount)
         {
             Id = id;
             Title = title;
@@ -44,10 +38,77 @@ namespace Ong.Domain
             CurrentAmount = currentAmount;
         }
 
-        public void UpdateStatus(EStatusCampanha newStatus) => Status = newStatus;
+        public static Campaign Restore(
+            Guid id,
+            string title,
+            string description,
+            DateTimeOffset startDate,
+            DateTimeOffset endDate,
+            decimal financialGoal,
+            CampaignStatus status,
+            decimal currentAmount)
+        {
+            return new Campaign(
+                id,
+                title,
+                description,
+                startDate,
+                endDate,
+                financialGoal,
+                status,
+                currentAmount);
+        }
+
+        public static Campaign Create(
+            string title,
+            string description,
+            DateTimeOffset startDate,
+            DateTimeOffset endDate,
+            decimal financialGoal,
+            CampaignStatus status)
+        {
+            if (string.IsNullOrWhiteSpace(title))
+                throw new ArgumentException("Título é obrigatório.", nameof(title));
+
+            if (title.Length > MaxTitleLength)
+                throw new ArgumentException("Título não pode exceder 100 caracteres.", nameof(title));
+
+            if (string.IsNullOrWhiteSpace(description))
+                throw new ArgumentException("Descrição é obrigatória.", nameof(description));
+
+            if (description.Length > MaxDescriptionLength)
+                throw new ArgumentException("Descrição não pode exceder 300 caracteres.", nameof(description));
+
+            if (financialGoal <= 0)
+                throw new ArgumentException("A meta financeira deve ser maior que zero.", nameof(financialGoal));
+
+            if (endDate < startDate)
+                throw new ArgumentException("A data final não pode ser menor que a data inicial.");
+
+            if (endDate < DateTimeOffset.UtcNow)
+                throw new ArgumentException("A data final não pode estar no passado.", nameof(endDate));
+
+            return new Campaign(
+                Guid.NewGuid(),
+                title,
+                description,
+                startDate,
+                endDate,
+                financialGoal,
+                status,
+                0m);
+        }
+
+        public void UpdateStatus(CampaignStatus newStatus)
+        {
+            Status = newStatus;
+        }
 
         public void UpdateDescription(string newDescription)
         {
+            if (string.IsNullOrWhiteSpace(newDescription))
+                throw new ArgumentException("Descrição é obrigatória.", nameof(newDescription));
+
             if (newDescription.Length > MaxDescriptionLength)
                 throw new ArgumentException("Descrição não pode exceder 300 caracteres.", nameof(newDescription));
 
@@ -56,6 +117,9 @@ namespace Ong.Domain
 
         public void UpdateTitle(string newTitle)
         {
+            if (string.IsNullOrWhiteSpace(newTitle))
+                throw new ArgumentException("Título é obrigatório.", nameof(newTitle));
+
             if (newTitle.Length > MaxTitleLength)
                 throw new ArgumentException("Título não pode exceder 100 caracteres.", nameof(newTitle));
 
@@ -64,14 +128,31 @@ namespace Ong.Domain
 
         public void UpdateDates(DateTimeOffset newStartDate, DateTimeOffset newEndDate)
         {
+            if (newEndDate < newStartDate)
+                throw new ArgumentException("A data final não pode ser menor que a data inicial.");
+
             StartDate = newStartDate;
             EndDate = newEndDate;
+        }
+
+        public void UpdateFinancialGoal(decimal newFinancialGoal)
+        {
+            if (newFinancialGoal <= 0)
+                throw new ArgumentException("A meta financeira deve ser maior que zero.", nameof(newFinancialGoal));
+
+            FinancialGoal = newFinancialGoal;
         }
 
         public void AddDonation(decimal amount)
         {
             if (amount <= 0)
-                throw new ArgumentException("Valor da doação deve ser maior que zero.");
+                throw new ArgumentException("Valor da doação deve ser maior que zero.", nameof(amount));
+
+            if (Status == CampaignStatus.Canceled || Status == CampaignStatus.Completed)
+                throw new InvalidOperationException("Não é possível doar para campanhas encerradas ou canceladas.");
+
+            if (DateTimeOffset.UtcNow > EndDate)
+                throw new InvalidOperationException("Não é possível doar para campanhas encerradas.");
 
             CurrentAmount += amount;
 
@@ -79,16 +160,20 @@ namespace Ong.Domain
                 MarkAsCompleted();
         }
 
-        public bool IsActive() => Status == EStatusCampanha.InProgress && DateTimeOffset.UtcNow >= StartDate && DateTimeOffset.UtcNow <= EndDate;
+        public bool IsActive() =>
+            Status == CampaignStatus.Active &&
+            DateTimeOffset.UtcNow >= StartDate &&
+            DateTimeOffset.UtcNow <= EndDate;
 
-        public bool IsCompleted() => Status == EStatusCampanha.Completed || DateTimeOffset.UtcNow > EndDate;
+        public bool IsCompleted() =>
+            Status == CampaignStatus.Completed || DateTimeOffset.UtcNow > EndDate;
 
-        public bool InProgress() => Status == EStatusCampanha.InProgress && DateTimeOffset.UtcNow < EndDate;
+        public bool InProgress() =>
+            Status == CampaignStatus.Active && DateTimeOffset.UtcNow < EndDate;
 
         public void MarkAsCompleted()
         {
-            Status = EStatusCampanha.Completed;
-
+            Status = CampaignStatus.Completed;
             EndDate = DateTimeOffset.UtcNow;
         }
     }

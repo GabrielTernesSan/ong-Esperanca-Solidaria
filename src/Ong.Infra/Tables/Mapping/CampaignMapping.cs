@@ -10,7 +10,10 @@ namespace Ong.Infra.Tables.Mapping
             builder.ToTable("Campaigns");
 
             builder.HasKey(x => x.Id);
-            builder.Property(x => x.Id).IsRequired().ValueGeneratedNever();
+
+            builder.Property(x => x.Id)
+                   .IsRequired()
+                   .ValueGeneratedNever();
 
             builder.Property(u => u.Title)
                 .HasMaxLength(Domain.Campaign.MaxTitleLength)
@@ -27,12 +30,15 @@ namespace Ong.Infra.Tables.Mapping
                    .IsRequired();
 
             builder.Property(u => u.CurrentAmount)
+                   .HasColumnType("decimal(18,2)")
                    .IsRequired();
 
             builder.Property(u => u.FinancialGoal)
+                   .HasColumnType("decimal(18,2)")
                    .IsRequired();
 
             builder.Property(u => u.Status)
+                   .HasConversion<int>()
                    .IsRequired();
         }
     }

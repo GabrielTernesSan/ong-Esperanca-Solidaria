@@ -1,8 +1,7 @@
-﻿using Ong.Domain;
+﻿using Microsoft.EntityFrameworkCore;
+using Ong.Domain;
+using Ong.Domain.Enums;
 using Ong.Domain.Repositories;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace Ong.Infra.Repositories
 {
@@ -19,7 +18,10 @@ namespace Ong.Infra.Repositories
         {
             var entity = await _context.Campaigns.FindAsync(id);
 
-            return new Campaign(
+            if (entity == null)
+                return null;
+
+            return Campaign.Restore(
                 entity.Id,
                 entity.Title,
                 entity.Description,
@@ -30,11 +32,31 @@ namespace Ong.Infra.Repositories
                 entity.CurrentAmount);
         }
 
+        public Task AddAsync(Campaign campaign)
+        {
+            var entity = new Tables.Campaign
+            {
+                Id = campaign.Id,
+                Title = campaign.Title,
+                Description = campaign.Description,
+                StartDate = campaign.StartDate,
+                EndDate = campaign.EndDate,
+                FinancialGoal = campaign.FinancialGoal,
+                CurrentAmount = campaign.CurrentAmount,
+                Status = campaign.Status
+            };
+
+            _context.Campaigns.Add(entity);
+
+            return Task.CompletedTask;
+        }
+
         public async Task UpdateAsync(Campaign campaign)
         {
             var entity = await _context.Campaigns.FindAsync(campaign.Id);
 
-            if (entity == null) return;
+            if (entity == null)
+                return;
 
             entity.Title = campaign.Title;
             entity.Description = campaign.Description;
@@ -45,8 +67,24 @@ namespace Ong.Infra.Repositories
             entity.Status = campaign.Status;
 
             _context.Campaigns.Update(entity);
+        }
 
-            await _context.SaveChangesAsync();
+        public async Task<IEnumerable<Campaign>> GetActiveAsync()
+        {
+            var entities = await _context.Campaigns
+                .AsNoTracking()
+                .Where(x => x.Status == CampaignStatus.Active && x.EndDate >= DateTimeOffset.UtcNow)
+                .ToListAsync();
+
+            return entities.Select(entity => Campaign.Restore(
+                entity.Id,
+                entity.Title,
+                entity.Description,
+                entity.StartDate,
+                entity.EndDate,
+                entity.FinancialGoal,
+                entity.Status,
+                entity.CurrentAmount));
         }
     }
 }

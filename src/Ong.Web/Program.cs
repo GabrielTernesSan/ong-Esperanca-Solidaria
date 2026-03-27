@@ -127,13 +127,33 @@ else
     {
         var result = await mediator.Send(request);
         return result.HasErrors ? Results.BadRequest(result) : Results.Ok(result);
-    });
+    }).WithTags("Auth");
 
     app.MapPost("/auth/login", async ([FromBody] LoginRequest request, IMediator mediator) =>
     {
         var result = await mediator.Send(request);
         return result.HasErrors ? Results.Unauthorized() : Results.Ok(result);
-    });
+    }).WithTags("Auth");
+    
+    app.MapPost("/campaigns", async ([FromBody] CreateCampaignRequest request, IMediator mediator) =>
+    {
+        var result = await mediator.Send(request);
+
+        return result.HasErrors ? Results.BadRequest(result) : Results.Ok(result);
+    }).RequireAuthorization().WithTags("Campaigns");
+
+    app.MapPut("/campaigns/{id}", async (Guid id, [FromBody] UpdateCampaignRequest request, IMediator mediator) =>
+    {
+        request.Id = id;
+        var result = await mediator.Send(request);
+        return result.HasErrors ? Results.BadRequest(result) : Results.Ok(result);
+    }).RequireAuthorization().WithTags("Campaigns");
+
+    app.MapGet("/campaigns/active", async (IMediator mediator) =>
+    {
+        var result = await mediator.Send(new GetActiveCampaignsRequest());
+        return result.HasErrors ? Results.BadRequest(result) : Results.Ok(result);
+    }).WithTags("Campaigns");
 
     app.MapPost("/donations/{campaingId}", async (Guid campaingId, [FromBody] DonationRequest request, IMediator mediator, HttpContext httpContext) =>
     {
@@ -144,7 +164,7 @@ else
 
         var result = await mediator.Send(request);
         return result.HasErrors ? Results.BadRequest(result) : Results.Ok(result);
-    }).RequireAuthorization();
+    }).RequireAuthorization().WithTags("Donations");
 }
 
 app.Run();
