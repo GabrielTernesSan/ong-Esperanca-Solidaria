@@ -1,4 +1,4 @@
-﻿using MediatR;
+using MediatR;
 using Ong.Application.Requests;
 using Ong.Commom;
 using Ong.Domain;
@@ -29,13 +29,10 @@ namespace Ong.Application.Handlers
                 request.Description,
                 request.StartDate,
                 request.EndDate,
-                request.FinancialGoal,
-                request.Status
+                request.FinancialGoal
             );
 
             await _campaignRepository.AddAsync(campaign);
-
-            await _unitOfWork.CommitAsync(cancellationToken);
 
             response.SetResult(campaign.Id);
 

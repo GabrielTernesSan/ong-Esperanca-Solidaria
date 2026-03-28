@@ -32,7 +32,7 @@ namespace Ong.Infra.Repositories
                 entity.CurrentAmount);
         }
 
-        public Task AddAsync(Campaign campaign)
+        public async Task AddAsync(Campaign campaign)
         {
             var entity = new Tables.Campaign
             {
@@ -48,7 +48,7 @@ namespace Ong.Infra.Repositories
 
             _context.Campaigns.Add(entity);
 
-            return Task.CompletedTask;
+            await _context.SaveChangesAsync();
         }
 
         public async Task UpdateAsync(Campaign campaign)
@@ -67,6 +67,8 @@ namespace Ong.Infra.Repositories
             entity.Status = campaign.Status;
 
             _context.Campaigns.Update(entity);
+
+            await _context.SaveChangesAsync();
         }
 
         public async Task<IEnumerable<Campaign>> GetActiveAsync()

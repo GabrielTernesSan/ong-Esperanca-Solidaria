@@ -65,7 +65,7 @@ namespace Ong.Domain
             DateTimeOffset startDate,
             DateTimeOffset endDate,
             decimal financialGoal,
-            ECampaignStatus status)
+            ECampaignStatus status = ECampaignStatus.Active)
         {
             if (string.IsNullOrWhiteSpace(title))
                 throw new ArgumentException("Título é obrigatório.", nameof(title));

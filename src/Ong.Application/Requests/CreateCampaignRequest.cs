@@ -1,6 +1,5 @@
 using MediatR;
 using Ong.Commom;
-using Ong.Domain.Enums;
 
 namespace Ong.Application.Requests
 {
@@ -11,6 +10,5 @@ namespace Ong.Application.Requests
         public DateTimeOffset StartDate { get; set; }
         public DateTimeOffset EndDate { get; set; }
         public decimal FinancialGoal { get; set; }
-        public ECampaignStatus Status { get; set; }
     }
 }
