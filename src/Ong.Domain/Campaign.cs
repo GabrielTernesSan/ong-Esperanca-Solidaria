@@ -14,7 +14,7 @@ namespace Ong.Domain
         public DateTimeOffset EndDate { get; private set; }
         public decimal FinancialGoal { get; private set; }
         public decimal CurrentAmount { get; private set; }
-        public CampaignStatus Status { get; private set; }
+        public ECampaignStatus Status { get; private set; }
 
         private Campaign() { }
 
@@ -25,7 +25,7 @@ namespace Ong.Domain
             DateTimeOffset startDate,
             DateTimeOffset endDate,
             decimal financialGoal,
-            CampaignStatus status,
+            ECampaignStatus status,
             decimal currentAmount)
         {
             Id = id;
@@ -45,7 +45,7 @@ namespace Ong.Domain
             DateTimeOffset startDate,
             DateTimeOffset endDate,
             decimal financialGoal,
-            CampaignStatus status,
+            ECampaignStatus status,
             decimal currentAmount)
         {
             return new Campaign(
@@ -65,7 +65,7 @@ namespace Ong.Domain
             DateTimeOffset startDate,
             DateTimeOffset endDate,
             decimal financialGoal,
-            CampaignStatus status)
+            ECampaignStatus status)
         {
             if (string.IsNullOrWhiteSpace(title))
                 throw new ArgumentException("Título é obrigatório.", nameof(title));
@@ -99,7 +99,7 @@ namespace Ong.Domain
                 0m);
         }
 
-        public void UpdateStatus(CampaignStatus newStatus)
+        public void UpdateStatus(ECampaignStatus newStatus)
         {
             Status = newStatus;
         }
@@ -148,7 +148,7 @@ namespace Ong.Domain
             if (amount <= 0)
                 throw new ArgumentException("Valor da doação deve ser maior que zero.", nameof(amount));
 
-            if (Status == CampaignStatus.Canceled || Status == CampaignStatus.Completed)
+            if (Status == ECampaignStatus.Canceled || Status == ECampaignStatus.Completed)
                 throw new InvalidOperationException("Não é possível doar para campanhas encerradas ou canceladas.");
 
             if (DateTimeOffset.UtcNow > EndDate)
@@ -161,19 +161,19 @@ namespace Ong.Domain
         }
 
         public bool IsActive() =>
-            Status == CampaignStatus.Active &&
+            Status == ECampaignStatus.Active &&
             DateTimeOffset.UtcNow >= StartDate &&
             DateTimeOffset.UtcNow <= EndDate;
 
         public bool IsCompleted() =>
-            Status == CampaignStatus.Completed || DateTimeOffset.UtcNow > EndDate;
+            Status == ECampaignStatus.Completed || DateTimeOffset.UtcNow > EndDate;
 
         public bool InProgress() =>
-            Status == CampaignStatus.Active && DateTimeOffset.UtcNow < EndDate;
+            Status == ECampaignStatus.Active && DateTimeOffset.UtcNow < EndDate;
 
         public void MarkAsCompleted()
         {
-            Status = CampaignStatus.Completed;
+            Status = ECampaignStatus.Completed;
             EndDate = DateTimeOffset.UtcNow;
         }
     }

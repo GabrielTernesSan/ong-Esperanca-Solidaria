@@ -1,6 +1,6 @@
-﻿namespace Ong.Domain.Enums
+namespace Ong.Domain.Enums
 {
-    public enum CampaignStatus
+    public enum ECampaignStatus
     {
         Active = 1,
         Completed = 2,

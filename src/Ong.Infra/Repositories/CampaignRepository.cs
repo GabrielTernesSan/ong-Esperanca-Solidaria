@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Ong.Domain;
 using Ong.Domain.Enums;
 using Ong.Domain.Repositories;
@@ -73,7 +73,7 @@ namespace Ong.Infra.Repositories
         {
             var entities = await _context.Campaigns
                 .AsNoTracking()
-                .Where(x => x.Status == CampaignStatus.Active && x.EndDate >= DateTimeOffset.UtcNow)
+                .Where(x => x.Status == ECampaignStatus.Active && x.EndDate >= DateTimeOffset.UtcNow)
                 .ToListAsync();
 
             return entities.Select(entity => Campaign.Restore(

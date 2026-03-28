@@ -11,6 +11,6 @@ namespace Ong.Infra.Tables
         public DateTimeOffset EndDate { get; set; }
         public decimal CurrentAmount { get; set; }
         public decimal FinancialGoal { get; set; }
-        public CampaignStatus Status { get; set; }
+        public ECampaignStatus Status { get; set; }
     }
 }
