@@ -39,6 +39,8 @@ namespace Ong.Infra
             services.AddScoped<IOutboxMessageRepository, OutboxMessageRepository>();
             services.AddScoped<ICampaignRepository, CampaignRepository>();
 
+            services.AddScoped<ITokenService, TokenService>();
+
             return services;
         }
     }

@@ -1,4 +1,5 @@
 using MediatR;
+using MassTransit;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -13,6 +14,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddInfraLayer(builder.Configuration);
 builder.Services.AddApplicationLayer();
 builder.Services.AddHttpContextAccessor();
+
+builder.Services.AddMassTransit(x => x.UsingInMemory());
 
 builder.Services.AddOpenTelemetry()
     .WithMetrics(metrics =>

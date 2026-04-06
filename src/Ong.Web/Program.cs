@@ -140,14 +140,14 @@ else
         var result = await mediator.Send(request);
 
         return result.HasErrors ? Results.BadRequest(result) : Results.Ok(result);
-    }).RequireAuthorization().WithTags("Campaigns");
+    }).RequireAuthorization("GestorONGPolicy").WithTags("Campaigns");
 
     app.MapPut("/campaigns/{id}", async (Guid id, [FromBody] UpdateCampaignRequest request, IMediator mediator) =>
     {
         request.Id = id;
         var result = await mediator.Send(request);
         return result.HasErrors ? Results.BadRequest(result) : Results.Ok(result);
-    }).RequireAuthorization().WithTags("Campaigns");
+    }).RequireAuthorization("GestorONGPolicy").WithTags("Campaigns");
 
     app.MapGet("/campaigns/active", async (IMediator mediator) =>
     {
