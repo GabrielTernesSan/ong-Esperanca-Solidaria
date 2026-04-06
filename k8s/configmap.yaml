@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ong-config
+data:
+  RabbitMq__Host: "rabbitmq-service"
+  RabbitMq__Username: "guest"
+  RabbitMq__Password: "guest"
+  Jwt__Issuer: "ong-esperanca-solidaria"
+  Jwt__Audience: "ong-esperanca-solidaria"
+  Jwt__ExpireHours: "2"
+  # Substitua pelas connection strings dos seus bancos Neon
+  ConnectionStrings__DefaultConnection: ""
+  Jwt__Key: ""

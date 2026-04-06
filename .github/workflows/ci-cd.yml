@@ -1,0 +1,57 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  DOTNET_VERSION: '10.0.x'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+          dotnet-quality: preview
+
+      - name: Restore
+        run: dotnet restore Ong.sln
+
+      - name: Build
+        run: dotnet build Ong.sln --configuration Release --no-restore
+
+      - name: Test
+        run: dotnet test Ong.sln --configuration Release --no-build --verbosity normal
+
+  docker:
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Auth API Docker Image
+        run: |
+          docker build -f src/Ong.Api.Auth/Dockerfile -t ong-auth-api:${{ github.sha }} -t ong-auth-api:latest .
+
+      - name: Build Campaigns API Docker Image
+        run: |
+          docker build -f src/Ong.Api.Campaigns/Dockerfile -t ong-campaigns-api:${{ github.sha }} -t ong-campaigns-api:latest .
+
+      - name: Build Worker Docker Image
+        run: |
+          docker build -f src/Ong.Worker/Dockerfile -t ong-worker:${{ github.sha }} -t ong-worker:latest .

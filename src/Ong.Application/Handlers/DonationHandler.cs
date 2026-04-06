@@ -2,6 +2,8 @@ using MediatR;
 using Ong.Application.Requests;
 using Ong.Commom;
 using Ong.Domain;
+using Ong.Domain.Enums;
+using Ong.Domain.Repositories;
 using Ong.Domain.Repositories.UnitOfWork;
 using System.Text.Json;
 
@@ -12,17 +14,27 @@ namespace Ong.Application.Handlers
         private readonly IDonationRepository _donationRepository;
         private readonly IOutboxMessageRepository _outboxRepository;
         private readonly IUnitOfWork _unitOfWork;
+        private readonly ICampaignRepository _campaignRepository;
 
-        public DonationHandler(IDonationRepository donationRepository, IOutboxMessageRepository outboxRepository, IUnitOfWork unitOfWork)
+        public DonationHandler(IDonationRepository donationRepository, IOutboxMessageRepository outboxRepository, IUnitOfWork unitOfWork, ICampaignRepository campaignRepository)
         {
             _donationRepository = donationRepository;
             _outboxRepository = outboxRepository;
             _unitOfWork = unitOfWork;
+            _campaignRepository = campaignRepository;
         }
 
         public async Task<Response> Handle(DonationRequest request, CancellationToken cancellationToken)
         {
             var response = new Response();
+
+            var campaign = await _campaignRepository.GetByIdAsync(request.CampaignId);
+
+            if (campaign is null)
+                return response.AddError("Campanha não encontrada.");
+
+            if (campaign.IsCompleted() || campaign.Status == ECampaignStatus.Canceled)
+                return response.AddError("Não é possível doar para campanhas encerradas ou canceladas.");
 
             var donationId = Guid.NewGuid();
 

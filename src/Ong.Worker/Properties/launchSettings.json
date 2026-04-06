@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "Ong.Worker": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "https://localhost:39802;http://localhost:39804"
+    }
+  }
+}
