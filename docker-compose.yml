@@ -1,0 +1,71 @@
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  ong-api-auth:
+    build:
+      context: .
+      dockerfile: src/Ong.Api.Auth/Dockerfile
+    container_name: ong-api-auth
+    ports:
+      - "39806:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__DefaultConnection: "Host=ep-winter-silence-a8q1uqc7-pooler.eastus2.azure.neon.tech;Database=neondb;Username=neondb_owner;Password=npg_5YvNBlQGLW9i;SSL Mode=VerifyFull"
+      Jwt__Key: "UmaChaveSuperSecretaComPeloMenos32Caracteres!"
+      Jwt__Issuer: "OngEsperancaSolidaria"
+      Jwt__Audience: "OngEsperancaSolidaria"
+      Jwt__ExpireHours: "8"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  ong-api-campaigns:
+    build:
+      context: .
+      dockerfile: src/Ong.Api.Campaigns/Dockerfile
+    container_name: ong-api-campaigns
+    ports:
+      - "39805:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__DefaultConnection: "Host=ep-winter-silence-a8q1uqc7-pooler.eastus2.azure.neon.tech;Database=neondb;Username=neondb_owner;Password=npg_5YvNBlQGLW9i;SSL Mode=VerifyFull"
+      RabbitMq__Host: "rabbitmq"
+      RabbitMq__Username: "guest"
+      RabbitMq__Password: "guest"
+      Jwt__Key: "UmaChaveSuperSecretaComPeloMenos32Caracteres!"
+      Jwt__Issuer: "OngEsperancaSolidaria"
+      Jwt__Audience: "OngEsperancaSolidaria"
+      Jwt__ExpireHours: "8"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  ong-worker:
+    build:
+      context: .
+      dockerfile: src/Ong.Worker/Dockerfile
+    container_name: ong-worker
+    ports:
+      - "39804:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__DefaultConnection: "Host=ep-winter-silence-a8q1uqc7-pooler.eastus2.azure.neon.tech;Database=neondb;Username=neondb_owner;Password=npg_5YvNBlQGLW9i;SSL Mode=VerifyFull"
+      RabbitMq__Host: "rabbitmq"
+      RabbitMq__Username: "guest"
+      RabbitMq__Password: "guest"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
