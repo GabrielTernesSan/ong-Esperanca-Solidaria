@@ -1,4 +1,5 @@
 using Hangfire;
+using Hangfire.Dashboard;
 using Hangfire.PostgreSql;
 using OpenTelemetry.Metrics;
 using Ong.Application;
@@ -41,7 +42,12 @@ builder.Services.AddHealthChecks();
 
 var app = builder.Build();
 
-app.UseHangfireDashboard();
+app.UseHangfireDashboard("/hangfire", new DashboardOptions
+{
+    Authorization = app.Environment.IsDevelopment()
+        ? new[] { new AllowAllDashboardFilter() }
+        : new[] { new Hangfire.Dashboard.LocalRequestsOnlyAuthorizationFilter() }
+});
 
 app.MapHealthChecks("/health");
 app.UseOpenTelemetryPrometheusScrapingEndpoint("/metrics");
@@ -57,3 +63,8 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.Run();
+
+public class AllowAllDashboardFilter : IDashboardAuthorizationFilter
+{
+    public bool Authorize(DashboardContext context) => true;
+}
