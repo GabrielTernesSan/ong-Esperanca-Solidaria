@@ -15,6 +15,9 @@
 [Tt]est[Rr]esult*/
 [Bb]uild[Ll]og.*
 
+# Ignorar arquivos de configuração do Kubernetes com credenciais
+configmap.yaml
+
 # Visual Studio
 .vs/
 
