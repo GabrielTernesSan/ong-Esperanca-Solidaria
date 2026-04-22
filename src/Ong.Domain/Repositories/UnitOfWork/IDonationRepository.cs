@@ -4,5 +4,7 @@ namespace Ong.Domain.Repositories.UnitOfWork
     {
         Task<Donation?> GetByIdAsync(Guid id);
         Task CreateAsync(Donation donation);
+        Task<decimal> GetTotalAmountByCampaignIdAsync(Guid campaignId);
+        Task<Dictionary<Guid, decimal>> GetTotalAmountsByCampaignIdsAsync(IEnumerable<Guid> campaignIds);
     }
 }

@@ -1,6 +1,7 @@
 using MassTransit;
 using Microsoft.Extensions.Logging;
 using Ong.Commom;
+using Ong.Domain.Enums;
 using Ong.Domain.Repositories;
 using Ong.Domain.Repositories.UnitOfWork;
 
@@ -51,7 +52,15 @@ namespace Ong.Application.Worker.Consumers
                 return;
             }
 
-            campaign.AddDonation(evento.Amount);
+            if (campaign.Status == ECampaignStatus.Canceled || campaign.Status == ECampaignStatus.Completed)
+                return;
+
+            var totalAmount = await _donationRepository.GetTotalAmountByCampaignIdAsync(evento.CampaignId);
+
+            if (totalAmount < campaign.FinancialGoal)
+                return;
+
+            campaign.MarkAsCompleted();
 
             await _campaignRepository.UpdateAsync(campaign);
         }

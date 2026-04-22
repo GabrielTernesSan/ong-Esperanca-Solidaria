@@ -28,8 +28,7 @@ namespace Ong.Infra.Repositories
                 entity.StartDate,
                 entity.EndDate,
                 entity.FinancialGoal,
-                entity.Status,
-                entity.CurrentAmount);
+                entity.Status);
         }
 
         public async Task AddAsync(Campaign campaign)
@@ -42,7 +41,6 @@ namespace Ong.Infra.Repositories
                 StartDate = campaign.StartDate,
                 EndDate = campaign.EndDate,
                 FinancialGoal = campaign.FinancialGoal,
-                CurrentAmount = campaign.CurrentAmount,
                 Status = campaign.Status
             };
 
@@ -63,7 +61,6 @@ namespace Ong.Infra.Repositories
             entity.StartDate = campaign.StartDate;
             entity.EndDate = campaign.EndDate;
             entity.FinancialGoal = campaign.FinancialGoal;
-            entity.CurrentAmount = campaign.CurrentAmount;
             entity.Status = campaign.Status;
 
             _context.Campaigns.Update(entity);
@@ -85,8 +82,7 @@ namespace Ong.Infra.Repositories
                 entity.StartDate,
                 entity.EndDate,
                 entity.FinancialGoal,
-                entity.Status,
-                entity.CurrentAmount));
+                entity.Status));
         }
     }
 }

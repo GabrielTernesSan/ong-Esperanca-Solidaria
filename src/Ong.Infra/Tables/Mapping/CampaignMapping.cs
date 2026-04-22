@@ -29,10 +29,6 @@ namespace Ong.Infra.Tables.Mapping
             builder.Property(u => u.EndDate)
                    .IsRequired();
 
-            builder.Property(u => u.CurrentAmount)
-                   .HasColumnType("decimal(18,2)")
-                   .IsRequired();
-
             builder.Property(u => u.FinancialGoal)
                    .HasColumnType("decimal(18,2)")
                    .IsRequired();

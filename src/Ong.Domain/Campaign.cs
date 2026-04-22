@@ -13,7 +13,6 @@ namespace Ong.Domain
         public DateTimeOffset StartDate { get; private set; }
         public DateTimeOffset EndDate { get; private set; }
         public decimal FinancialGoal { get; private set; }
-        public decimal CurrentAmount { get; private set; }
         public ECampaignStatus Status { get; private set; }
 
         private Campaign() { }
@@ -25,8 +24,7 @@ namespace Ong.Domain
             DateTimeOffset startDate,
             DateTimeOffset endDate,
             decimal financialGoal,
-            ECampaignStatus status,
-            decimal currentAmount)
+            ECampaignStatus status)
         {
             Id = id;
             Title = title;
@@ -35,7 +33,6 @@ namespace Ong.Domain
             EndDate = endDate;
             FinancialGoal = financialGoal;
             Status = status;
-            CurrentAmount = currentAmount;
         }
 
         public static Campaign Restore(
@@ -45,8 +42,7 @@ namespace Ong.Domain
             DateTimeOffset startDate,
             DateTimeOffset endDate,
             decimal financialGoal,
-            ECampaignStatus status,
-            decimal currentAmount)
+            ECampaignStatus status)
         {
             return new Campaign(
                 id,
@@ -55,8 +51,7 @@ namespace Ong.Domain
                 startDate,
                 endDate,
                 financialGoal,
-                status,
-                currentAmount);
+                status);
         }
 
         public static Campaign Create(
@@ -95,8 +90,7 @@ namespace Ong.Domain
                 startDate,
                 endDate,
                 financialGoal,
-                status,
-                0m);
+                status);
         }
 
         public void UpdateStatus(ECampaignStatus newStatus)
@@ -141,23 +135,6 @@ namespace Ong.Domain
                 throw new ArgumentException("A meta financeira deve ser maior que zero.", nameof(newFinancialGoal));
 
             FinancialGoal = newFinancialGoal;
-        }
-
-        public void AddDonation(decimal amount)
-        {
-            if (amount <= 0)
-                throw new ArgumentException("Valor da doação deve ser maior que zero.", nameof(amount));
-
-            if (Status == ECampaignStatus.Canceled || Status == ECampaignStatus.Completed)
-                throw new InvalidOperationException("Não é possível doar para campanhas encerradas ou canceladas.");
-
-            if (DateTimeOffset.UtcNow > EndDate)
-                throw new InvalidOperationException("Não é possível doar para campanhas encerradas.");
-
-            CurrentAmount += amount;
-
-            if (CurrentAmount >= FinancialGoal)
-                MarkAsCompleted();
         }
 
         public bool IsActive() =>
