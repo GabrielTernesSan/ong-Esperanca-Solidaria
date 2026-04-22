@@ -26,6 +26,12 @@ namespace Ong.Infra.Tables.Mapping
             builder.Property(x => x.Role)
                 .IsRequired()
                 .HasMaxLength(20);
+
+            builder.HasIndex(x => x.Cpf).IsUnique();
+
+            builder.Property(x => x.Cpf)
+                .IsRequired()
+                .HasMaxLength(11);
         }
     }
 }
